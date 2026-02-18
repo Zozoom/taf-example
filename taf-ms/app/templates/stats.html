@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Run analytics</h1>
+<p class="page-subtitle">Overview of execution outcomes across all recorded runs.</p>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Summary</h2>
+        <p class="card-meta">Distribution of finished, failed, scheduled and cancelled runs.</p>
+    </div>
+
+    <div class="form-grid" style="margin-bottom: 20px;">
+        <div class="form-group">
+            <label>Total runs</label>
+            <p class="run-summary-line"><strong>{{ total_runs }}</strong></p>
+        </div>
+        <div class="form-group">
+            <label>Finished</label>
+            <p class="run-summary-line"><strong>{{ status_counts.get('finished', 0) }}</strong></p>
+        </div>
+        <div class="form-group">
+            <label>Failed</label>
+            <p class="run-summary-line"><strong>{{ status_counts.get('failed', 0) }}</strong></p>
+        </div>
+        <div class="form-group">
+            <label>Scheduled</label>
+            <p class="run-summary-line"><strong>{{ status_counts.get('scheduled', 0) }}</strong></p>
+        </div>
+        <div class="form-group">
+            <label>Cancelled</label>
+            <p class="run-summary-line"><strong>{{ status_counts.get('cancelled', 0) }}</strong></p>
+        </div>
+    </div>
+
+    <div style="max-width: 720px;">
+        <canvas id="runs-bar-chart" height="120"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById("runs-bar-chart");
+        if (!ctx) return;
+
+        const data = {
+            labels: ["Finished", "Failed", "Scheduled", "Cancelled"],
+            datasets: [{
+                label: "Runs",
+                data: [
+                    {{ status_counts.get('finished', 0) }},
+                    {{ status_counts.get('failed', 0) }},
+                    {{ status_counts.get('scheduled', 0) }},
+                    {{ status_counts.get('cancelled', 0) }},
+                ],
+                backgroundColor: [
+                    "rgba(16, 185, 129, 0.4)",
+                    "rgba(248, 113, 113, 0.4)",
+                    "rgba(59, 130, 246, 0.4)",
+                    "rgba(148, 163, 184, 0.4)"
+                ],
+                borderColor: [
+                    "rgba(16, 185, 129, 1)",
+                    "rgba(248, 113, 113, 1)",
+                    "rgba(59, 130, 246, 1)",
+                    "rgba(148, 163, 184, 1)"
+                ],
+                borderWidth: 1,
+            }]
+        };
+
+        new Chart(ctx, {
+            type: "bar",
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        precision: 0,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,4 @@
+robotframework==7.0
+robotframework-requests
+requests
+PyYAML

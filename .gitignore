@@ -1,0 +1,40 @@
+# Robot Framework artifacts
+robot-tests/artifacts/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment & secrets
+.env
+.env.local
+*.local
+
+# Database (if using SQLite)
+*.db
+*.sqlite3
+
+# Logs
+*.log

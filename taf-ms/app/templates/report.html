@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Test report</h1>
+<p class="page-subtitle">
+    <span>Rendered Robot Framework log for run</span>
+    <span class="tag-muted">{{ run_folder }}</span>.
+</p>
+
+<p style="margin-bottom: 16px;">
+    <a href="/report-file/{{ run_folder }}?download=1" class="btn btn-secondary" download>
+        <span data-lucide="download"></span>
+        <span>Download report</span>
+    </a>
+</p>
+
+<iframe src="/report-file/{{ run_folder }}"></iframe>
+
+{% endblock %}

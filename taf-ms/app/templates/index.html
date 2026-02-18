@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Run tests</h1>
+<p class="page-subtitle">Trigger or schedule Robot Framework suites for any environment.</p>
+
+<style>
+.dash-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 28px;
+    align-items: start;
+}
+.dash-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.dash-section {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 22px 24px;
+}
+.dash-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+.dash-section-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+}
+.dash-section-body { display: flex; flex-direction: column; gap: 16px; }
+.dash-form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+.dash-form-group select,
+.dash-form-group input[type="text"],
+.dash-form-group input[type="url"],
+.dash-form-group input[type="time"],
+.dash-form-group input[type="datetime-local"],
+.dash-form-group input[type="file"] {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    background: #f9fafb;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.dash-form-group select:focus,
+.dash-form-group input[type="time"]:focus,
+.dash-form-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    background: #fff;
+}
+.dash-target-modes {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.dash-target-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.dash-target-mode:hover { border-color: rgba(37,99,235,0.5); background: #f8fafc; }
+.dash-target-mode input { display: none; }
+.dash-target-mode:has(input:checked) { border-color: var(--primary); background: #eff6ff; }
+.dash-target-mode svg { width: 18px; height: 18px; flex-shrink: 0; }
+.dash-test-modes { display: flex; gap: 10px; flex-wrap: wrap; }
+.dash-files-list {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.dash-files-list ul { margin: 0; padding-left: 18px; }
+.dash-files-list li { margin: 4px 0; }
+.dash-files-list:empty { display: none; }
+.dash-files-list--hint .dash-files-hint { font-style: italic; }
+.dash-hint { margin: 8px 0 0; font-size: 12px; color: var(--text-muted); }
+.dash-schedule-note { margin: 8px 0 0; font-size: 12px; color: var(--text-muted); font-style: italic; }
+.dash-error { padding: 12px; background: #fee2e2; color: #b91c1c; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+.dash-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.dash-schedule-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--text-main);
+}
+.dash-schedule-toggle input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.dash-schedule-modes { display: flex; gap: 10px; flex-wrap: wrap; }
+.dash-summary-card {
+    background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    position: sticky;
+    top: 24px;
+}
+.dash-summary-title { margin: 0 0 16px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.dash-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.dash-summary-row:last-child { border-bottom: none; }
+.dash-summary-row span:first-child { color: var(--text-muted); font-weight: 500; }
+.dash-summary-row span:last-child { text-align: right; max-width: 65%; word-break: break-all; }
+.dash-submit {
+    margin-top: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
+}
+.dash-submit svg { width: 20px; height: 20px; }
+@media (max-width: 900px) {
+    .dash-layout { grid-template-columns: 1fr; }
+    .dash-summary-card { position: static; }
+}
+</style>
+
+{% if error %}<div class="dash-error">{{ error }}</div>{% endif %}
+<form action="/run-now" method="post" id="run-form" enctype="multipart/form-data">
+<input type="hidden" name="target_url" id="hidden-target-url">
+
+<div class="dash-layout">
+    <div class="dash-form">
+        <div class="dash-section">
+            <h2 class="dash-section-title"><span class="dash-section-num">1</span><span data-lucide="server"></span> Target</h2>
+            <div class="dash-section-body">
+                <div class="dash-form-group" id="env-group">
+                    <label for="env-select">Environment</label>
+                    <select id="env-select" name="env">
+                        {% if env_configs.get("local") %}<option value="local">localhost</option>{% endif %}
+                        {% if env_configs.get("stg") %}<option value="stg">staging</option>{% endif %}
+                    </select>
+                    <p style="margin: 8px 0 0; font-size: 12px; color: var(--text-muted);" id="env-inline-url"></p>
+                </div>
+                <div class="dash-form-group">
+                    <label>URL source</label>
+                    <div class="dash-target-modes">
+                        <label class="dash-target-mode">
+                            <input type="radio" name="target_mode" value="env" checked>
+                            <span data-lucide="globe"></span>
+                            <span>Use environment</span>
+                        </label>
+                        <label class="dash-target-mode">
+                            <input type="radio" name="target_mode" value="custom">
+                            <span data-lucide="link-2"></span>
+                            <span>Custom URL</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="dash-form-group" id="custom-url-group" style="display: none;">
+                    <label for="target-url-input">Custom URL</label>
+                    <input id="target-url-input" type="url" placeholder="https://api.example.com">
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-section">
+            <h2 class="dash-section-title"><span class="dash-section-num">2</span><span data-lucide="flask-conical"></span> Tests</h2>
+            <div class="dash-section-body">
+                <input type="hidden" name="test_mode" id="test-mode-input" value="suite">
+                <div class="dash-form-group">
+                    <label>How to select tests</label>
+                    <div class="dash-test-modes">
+                        <label class="dash-target-mode">
+                            <input type="radio" name="test_mode_radio" value="suite" checked>
+                            <span data-lucide="layers"></span>
+                            <span>Predefined suite</span>
+                        </label>
+                        <label class="dash-target-mode">
+                            <input type="radio" name="test_mode_radio" value="custom">
+                            <span data-lucide="tag"></span>
+                            <span>Custom tags</span>
+                        </label>
+                        <label class="dash-target-mode">
+                            <input type="radio" name="test_mode_radio" value="upload">
+                            <span data-lucide="upload"></span>
+                            <span>Upload files</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="dash-form-group" id="suite-group">
+                    <label for="test-suite-select">Test suite</label>
+                    <select id="test-suite-select" name="test_suite">
+                        <option value="smoke">Smoke</option>
+                        <option value="regression">Regression</option>
+                    </select>
+                    <div id="suite-files-list" class="dash-files-list"></div>
+                </div>
+                <div class="dash-form-group" id="custom-tags-group" style="display: none;">
+                    <label for="tags-input">Tag expression</label>
+                    <input id="tags-input" type="text" name="tags" placeholder="e.g. smoke AND httpbin">
+                    <div id="custom-files-list" class="dash-files-list"></div>
+                </div>
+                <div class="dash-form-group" id="upload-group" style="display: none;">
+                    <label for="uploaded-tests-input">Upload (at least 1 .robot and 1 .resource)</label>
+                    <input id="uploaded-tests-input" type="file" name="uploaded_tests" multiple accept=".robot,.resource">
+                    <p id="upload-hint" class="dash-hint">Select at least one .robot and one .resource file</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-section">
+            <h2 class="dash-section-title"><span class="dash-section-num">3</span><span data-lucide="clock"></span> Schedule</h2>
+            <div class="dash-section-body">
+                <input type="hidden" name="schedule_type" id="schedule-type-input" value="immediate">
+                <div class="dash-form-group">
+                    <label>When to run</label>
+                    <div class="dash-schedule-modes">
+                        <label class="dash-target-mode">
+                            <input type="radio" name="schedule_mode" value="immediate" checked>
+                            <span data-lucide="play"></span>
+                            <span>Immediate</span>
+                        </label>
+                        <label class="dash-target-mode">
+                            <input type="radio" name="schedule_mode" value="daily">
+                            <span data-lucide="calendar"></span>
+                            <span>Daily</span>
+                        </label>
+                        <label class="dash-target-mode">
+                            <input type="radio" name="schedule_mode" value="weekly">
+                            <span data-lucide="calendar-range"></span>
+                            <span>Weekly</span>
+                        </label>
+                        <label class="dash-target-mode">
+                            <input type="radio" name="schedule_mode" value="custom">
+                            <span data-lucide="calendar-clock"></span>
+                            <span>Custom</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="dash-form-group" id="schedule-daily-row" style="display: none;">
+                    <label for="schedule-daily-time">Time</label>
+                    <input id="schedule-daily-time" type="time" name="schedule_daily_time">
+                    <p class="dash-schedule-note">Runs every day at the set time.</p>
+                </div>
+                <div class="dash-form-group" id="schedule-weekly-row" style="display: none;">
+                    <label for="schedule-weekly-day">Day</label>
+                    <select id="schedule-weekly-day" name="schedule_weekly_day">
+                        <option value="mon">Monday</option>
+                        <option value="tue">Tuesday</option>
+                        <option value="wed">Wednesday</option>
+                        <option value="thu">Thursday</option>
+                        <option value="fri">Friday</option>
+                        <option value="sat">Saturday</option>
+                        <option value="sun">Sunday</option>
+                    </select>
+                    <label for="schedule-weekly-time" style="margin-top: 10px;">Time</label>
+                    <input id="schedule-weekly-time" type="time" name="schedule_weekly_time">
+                    <p class="dash-schedule-note">Runs every week on the selected day at the set time.</p>
+                </div>
+                <div class="dash-form-group" id="schedule-custom-row" style="display: none;">
+                    <label for="schedule-custom-datetime">Date & time</label>
+                    <input id="schedule-custom-datetime" type="datetime-local" name="schedule_time">
+                    <p class="dash-schedule-note">Runs only once when the scheduled time is reached.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="dash-summary-card">
+        <h3 class="dash-summary-title">Summary</h3>
+        <div class="dash-summary-row"><span>Environment</span><span id="summary-env">—</span></div>
+        <div class="dash-summary-row"><span>Target URL</span><span id="summary-url">—</span></div>
+        <div class="dash-summary-row"><span>Tests</span><span id="summary-test-type">smoke</span></div>
+        <div class="dash-summary-row"><span>When</span><span id="summary-schedule">Immediate</span></div>
+        <button type="submit" class="btn dash-submit">
+            <span data-lucide="play" id="submit-icon"></span>
+            <span id="submit-label">Start run</span>
+        </button>
+    </aside>
+</div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const envSelect = document.getElementById("env-select");
+    const envGroup = document.getElementById("env-group");
+    const tagsInput = document.getElementById("tags-input");
+    const targetModeRadios = document.querySelectorAll("input[name='target_mode']");
+    const customUrlGroup = document.getElementById("custom-url-group");
+    const targetUrlInput = document.getElementById("target-url-input");
+    const scheduleTypeInput = document.getElementById("schedule-type-input");
+    const scheduleDailyRow = document.getElementById("schedule-daily-row");
+    const scheduleWeeklyRow = document.getElementById("schedule-weekly-row");
+    const scheduleCustomRow = document.getElementById("schedule-custom-row");
+    const scheduleDailyTime = document.getElementById("schedule-daily-time");
+    const scheduleWeeklyDay = document.getElementById("schedule-weekly-day");
+    const scheduleWeeklyTime = document.getElementById("schedule-weekly-time");
+    const scheduleCustomDatetime = document.getElementById("schedule-custom-datetime");
+    const summaryEnv = document.getElementById("summary-env");
+    const summaryUrl = document.getElementById("summary-url");
+    const summaryTestType = document.getElementById("summary-test-type");
+    const summarySchedule = document.getElementById("summary-schedule");
+    const hiddenTargetUrl = document.getElementById("hidden-target-url");
+    const envInlineUrl = document.getElementById("env-inline-url");
+
+    const ENV_DETAILS = {{ env_configs | tojson }};
+    const TEST_DISCOVERY = {{ test_discovery | tojson }};
+
+    function currentMode() { return document.querySelector("input[name='target_mode']:checked")?.value || "env"; }
+    function testMode() { return document.querySelector("input[name='test_mode_radio']:checked")?.value || "suite"; }
+
+    function updateTestSection() {
+        const mode = testMode();
+        document.getElementById("test-mode-input").value = mode;
+        document.getElementById("suite-group").style.display = mode === "suite" ? "block" : "none";
+        document.getElementById("custom-tags-group").style.display = mode === "custom" ? "block" : "none";
+        document.getElementById("upload-group").style.display = mode === "upload" ? "block" : "none";
+        if (mode === "suite") updateSuiteFilesList();
+        if (mode === "custom") updateCustomTagsFilesList();
+    }
+
+    function updateSuiteFilesList() {
+        const suite = document.getElementById("test-suite-select").value;
+        const files = TEST_DISCOVERY.tags?.[suite] || [];
+        const el = document.getElementById("suite-files-list");
+        if (files.length === 0) {
+            el.innerHTML = '<em>No test files with this tag</em>';
+        } else {
+            el.innerHTML = "<strong>Found:</strong> <ul><li>" + files.join("</li><li>") + "</li></ul>";
+        }
+    }
+
+    function updateCustomTagsFilesList() {
+        const expr = (tagsInput.value || "").trim();
+        const el = document.getElementById("custom-files-list");
+        if (!expr) {
+            el.innerHTML = '<em class="dash-files-hint">Type a tag (e.g. smoke) to see matching test files</em>';
+            el.classList.add("dash-files-list--hint");
+            return;
+        }
+        el.classList.remove("dash-files-list--hint");
+        const allTags = TEST_DISCOVERY.all_tags || {};
+        let files = [];
+        if (expr.includes(" AND ")) {
+            const parts = expr.split(/\s+AND\s+/i).map(p => p.trim().toLowerCase()).filter(Boolean);
+            files = parts.reduce((acc, tag) => {
+                const tagFiles = allTags[tag] || [];
+                return acc.length === 0 ? tagFiles : tagFiles.filter(f => acc.includes(f));
+            }, []);
+        } else if (expr.includes(" OR ")) {
+            const parts = expr.split(/\s+OR\s+/i).map(p => p.trim().toLowerCase()).filter(Boolean);
+            const seen = new Set();
+            parts.forEach(tag => {
+                (allTags[tag] || []).forEach(f => { if (!seen.has(f)) { seen.add(f); files.push(f); } });
+            });
+            files.sort();
+        } else {
+            files = allTags[expr.toLowerCase()] || [];
+        }
+        if (files.length === 0) {
+            el.innerHTML = '<em>No test files match this expression</em>';
+        } else {
+            el.innerHTML = "<strong>Found:</strong> <ul><li>" + files.join("</li><li>") + "</li></ul>";
+        }
+    }
+
+    function updateSummary() {
+        const env = envSelect.value;
+        const details = ENV_DETAILS[env] || {};
+        const mode = currentMode();
+        const customUrl = targetUrlInput.value.trim();
+
+        let effectiveUrl;
+        if (mode === "custom") {
+            summaryEnv.textContent = "Custom";
+            effectiveUrl = customUrl || "";
+            summaryUrl.textContent = effectiveUrl || "—";
+        } else {
+            summaryEnv.textContent = (details.env_name || env).toUpperCase();
+            effectiveUrl = details.base_url || "";
+            summaryUrl.textContent = effectiveUrl || "—";
+        }
+        if (envInlineUrl && details.base_url) envInlineUrl.textContent = details.base_url;
+        hiddenTargetUrl.value = effectiveUrl || "";
+
+        const tm = testMode();
+        if (tm === "suite") summaryTestType.textContent = document.getElementById("test-suite-select").value;
+        else if (tm === "custom") summaryTestType.textContent = tagsInput.value.trim() || "—";
+        else summaryTestType.textContent = "Uploaded files";
+
+        const st = document.querySelector("input[name='schedule_mode']:checked")?.value || "immediate";
+        if (st === "immediate") summarySchedule.textContent = "Immediate";
+        else if (st === "daily") summarySchedule.textContent = scheduleDailyTime.value ? "Daily at " + scheduleDailyTime.value : "Daily (set time)";
+        else if (st === "weekly") summarySchedule.textContent = (scheduleWeeklyDay?.options?.[scheduleWeeklyDay.selectedIndex]?.text || "—") + " at " + (scheduleWeeklyTime?.value || "—");
+        else summarySchedule.textContent = scheduleCustomDatetime?.value || "Select date & time";
+
+        const labels = { immediate: "Start run", daily: "Set daily schedule", weekly: "Set weekly schedule", custom: "Schedule run" };
+        const icons = { immediate: "play", daily: "calendar", weekly: "calendar-range", custom: "calendar-clock" };
+        const labelEl = document.getElementById("submit-label");
+        const iconEl = document.getElementById("submit-icon");
+        if (labelEl) labelEl.textContent = labels[st] || "Start run";
+        if (iconEl) { iconEl.setAttribute("data-lucide", icons[st] || "play"); if (window.lucide?.createIcons) window.lucide.createIcons(); }
+    }
+
+    targetModeRadios.forEach(r => r.addEventListener("change", function () {
+        const m = currentMode();
+        customUrlGroup.style.display = m === "custom" ? "block" : "none";
+        envGroup.style.display = m === "custom" ? "none" : "block";
+        updateSummary();
+    }));
+
+    document.querySelectorAll("input[name='test_mode_radio']").forEach(r => r.addEventListener("change", function() { updateTestSection(); updateSummary(); }));
+    document.getElementById("test-suite-select").addEventListener("change", function() { updateSuiteFilesList(); updateSummary(); });
+    document.querySelectorAll("input[name='schedule_mode']").forEach(r => r.addEventListener("change", updateScheduleSection));
+    [scheduleDailyTime, scheduleWeeklyDay, scheduleWeeklyTime, scheduleCustomDatetime].forEach(el => { if (el) el.addEventListener("change", updateSummary); });
+    envSelect.addEventListener("change", updateSummary);
+    tagsInput.addEventListener("input", function() { updateCustomTagsFilesList(); updateSummary(); });
+    targetUrlInput.addEventListener("input", updateSummary);
+
+    function updateScheduleSection() {
+        const st = document.querySelector("input[name='schedule_mode']:checked")?.value || "immediate";
+        scheduleTypeInput.value = st;
+        scheduleDailyRow.style.display = st === "daily" ? "block" : "none";
+        scheduleWeeklyRow.style.display = st === "weekly" ? "block" : "none";
+        scheduleCustomRow.style.display = st === "custom" ? "block" : "none";
+        updateSummary();
+    }
+
+    document.getElementById("run-form").addEventListener("submit", function(e) {
+        const st = document.querySelector("input[name='schedule_mode']:checked")?.value || "immediate";
+        if (st === "daily" && !scheduleDailyTime?.value) {
+            e.preventDefault();
+            alert("Please set a time for the daily schedule.");
+            return false;
+        }
+        if (st === "weekly" && (!scheduleWeeklyTime?.value)) {
+            e.preventDefault();
+            alert("Please set day and time for the weekly schedule.");
+            return false;
+        }
+        if (st === "custom" && !scheduleCustomDatetime?.value) {
+            e.preventDefault();
+            alert("Please select date and time for the custom schedule.");
+            return false;
+        }
+        if (testMode() === "upload") {
+            const files = document.getElementById("uploaded-tests-input").files;
+            let robot = 0, resource = 0;
+            for (let i = 0; i < files.length; i++) {
+                const n = files[i].name.toLowerCase();
+                if (n.endsWith(".robot")) robot++;
+                else if (n.endsWith(".resource")) resource++;
+            }
+            if (robot < 1 || resource < 1) {
+                e.preventDefault();
+                alert("Upload mode requires at least one .robot and one .resource file.");
+                return false;
+            }
+        } else if (testMode() === "custom" && !document.getElementById("tags-input").value.trim()) {
+            e.preventDefault();
+            alert("Please enter a tag expression.");
+            return false;
+        }
+    });
+
+    if (window.lucide?.createIcons) window.lucide.createIcons();
+    updateTestSection();
+    updateScheduleSection();
+    updateSummary();
+});
+</script>
+{% endblock %}

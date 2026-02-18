@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Test runs</h1>
+<p class="page-subtitle">Browse recent executions and open full Robot Framework reports.</p>
+
+<style>
+.runs-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.runs-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.runs-stat {
+    padding: 12px 18px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+}
+.runs-stat strong { font-size: 18px; color: var(--primary); }
+.runs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.run-card {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 20px;
+    align-items: center;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.run-card:hover {
+    border-color: rgba(37,99,235,0.35);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.run-id {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-muted);
+    min-width: 36px;
+}
+.run-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.run-meta { font-size: 13px; }
+.run-meta-row { display: flex; gap: 6px; margin: 2px 0; }
+.run-meta-label { color: var(--text-muted); min-width: 85px; }
+.run-meta-val { color: var(--text-main); font-weight: 500; }
+.run-meta .env-row .run-meta-val { font-weight: 600; font-size: 15px; }
+.run-meta .scheduled { font-style: italic; }
+.runs-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+.runs-refresh {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.runs-refresh label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.runs-refresh select {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    background: var(--surface);
+}
+.runs-refresh-btn { padding: 6px 12px; font-size: 13px; }
+.runs-refresh-btn svg { width: 14px; height: 14px; }
+.run-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.run-badge.finished { background: #d1fae5; color: #047857; }
+.run-badge.failed { background: #fee2e2; color: #b91c1c; }
+.run-badge.running { background: #fef3c7; color: #b45309; }
+.run-badge.scheduled { background: #dbeafe; color: #1d4ed8; }
+.run-badge.cancelled { background: #f3f4f6; color: #6b7280; }
+.run-badge.error { background: #fecaca; color: #991b1b; }
+.run-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.run-action-form { margin: 0; display: inline; }
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+.modal-title { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
+.modal-text { margin: 0 0 20px; font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+.modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.runs-empty {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+}
+.runs-empty p { margin: 0 0 12px; font-size: 15px; }
+.runs-empty a { margin-top: 8px; }
+@media (max-width: 700px) {
+    .run-card {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .run-actions { justify-content: flex-start; }
+}
+</style>
+
+<div class="runs-page">
+    <div class="runs-toolbar">
+        {% if runs %}
+        <div class="runs-stats">
+            <span class="runs-stat"><strong>{{ runs|length }}</strong> runs</span>
+        </div>
+        {% else %}
+        <div class="runs-stats"></div>
+        {% endif %}
+        <div class="runs-refresh">
+            <label for="auto-refresh">Auto-refresh</label>
+            <select id="auto-refresh">
+                <option value="0">Off</option>
+                <option value="5">5 sec</option>
+                <option value="10">10 sec</option>
+                <option value="20" selected>20 sec</option>
+                <option value="30">30 sec</option>
+                <option value="60">1 min</option>
+                <option value="120">2 min</option>
+                <option value="180">3 min</option>
+                <option value="300">5 min</option>
+            </select>
+            <button type="button" id="refresh-now" class="btn btn-secondary runs-refresh-btn" title="Refresh now">
+                <span data-lucide="refresh-cw"></span>
+                <span>Refresh</span>
+            </button>
+        </div>
+    </div>
+    {% if runs %}
+
+    <div class="runs-list">
+        {% for r in runs %}
+        <article class="run-card">
+            <span class="run-id">#{{ r.id }}</span>
+            <div class="run-meta">
+                <div class="run-meta-row env-row">
+                    <span class="run-meta-label">Target:</span>
+                    <span class="run-meta-val">{{ r.target_url or r.env }}</span>
+                </div>
+                <div class="run-meta-row">
+                    <span class="run-meta-label">Test type:</span>
+                    <span class="run-meta-val">{{ r.test_type }}</span>
+                </div>
+                <div class="run-meta-row">
+                    <span class="run-meta-label">Run date:</span>
+                    <span class="run-meta-val">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '—' }}</span>
+                </div>
+                <div class="run-meta-row">
+                    <span class="run-meta-label">Duration:</span>
+                    <span class="run-meta-val">{{ format_duration(r) }}</span>
+                </div>
+                {% if r.scheduled_for %}
+                <div class="run-meta-row scheduled">
+                    <span class="run-meta-label">Scheduled:</span>
+                    <span class="run-meta-val">{{ r.scheduled_for }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <span class="run-badge {{ r.status }}">{{ r.status }}</span>
+            <div class="run-actions">
+                <form action="/rerun/{{ r.id }}" method="post" class="run-action-form rerun-form">
+                    <button type="button" class="btn btn-secondary rerun-btn">
+                        <span data-lucide="rotate-cw"></span>
+                        <span>Rerun as new</span>
+                    </button>
+                </form>
+                {% if r.run_folder %}
+                <a href="/report/{{ r.run_folder }}" class="btn btn-secondary" target="_blank" rel="noopener">
+                    <span data-lucide="file-text"></span>
+                    <span>Report</span>
+                </a>
+                {% endif %}
+                {% if r.status == "scheduled" %}
+                <form action="/cancel/{{ r.id }}" method="post" style="margin:0; display:inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <span data-lucide="x-circle"></span>
+                        <span>Cancel</span>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="runs-empty">
+        <p>No test runs yet.</p>
+        <p>Start your first run from the dashboard.</p>
+        <a href="/" class="btn">Go to Dashboard</a>
+    </div>
+    {% endif %}
+</div>
+
+<div id="rerun-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 class="modal-title">Rerun as new</h3>
+        <p class="modal-text">Are you sure you want to rerun this test as a new run? A new run will be created with the same configuration.</p>
+        <div class="modal-actions">
+            <button type="button" id="modal-cancel" class="btn btn-secondary">Cancel</button>
+            <button type="button" id="modal-confirm" class="btn">Rerun</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const STORAGE_KEY = "taf-runs-autorefresh";
+    const select = document.getElementById("auto-refresh");
+    if (!select) return;
+    select.value = localStorage.getItem(STORAGE_KEY) || "20";
+    let timer = null;
+    function tick() {
+        const secs = parseInt(select.value, 10);
+        if (secs > 0) location.reload();
+    }
+    select.addEventListener("change", function () {
+        const secs = parseInt(select.value, 10);
+        localStorage.setItem(STORAGE_KEY, String(secs));
+        if (timer) clearInterval(timer);
+        timer = secs > 0 ? setInterval(tick, secs * 1000) : null;
+    });
+    const refreshBtn = document.getElementById("refresh-now");
+    if (refreshBtn) refreshBtn.addEventListener("click", function () { location.reload(); });
+    if (parseInt(select.value, 10) > 0) {
+        timer = setInterval(tick, parseInt(select.value, 10) * 1000);
+    }
+
+    const modal = document.getElementById("rerun-modal");
+    const modalCancel = document.getElementById("modal-cancel");
+    const modalConfirm = document.getElementById("modal-confirm");
+    let pendingForm = null;
+
+    document.querySelectorAll(".rerun-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            pendingForm = this.closest(".rerun-form");
+            if (modal) modal.classList.add("active");
+        });
+    });
+
+    function closeModal() {
+        if (modal) modal.classList.remove("active");
+        pendingForm = null;
+    }
+
+    if (modalCancel) modalCancel.addEventListener("click", closeModal);
+    if (modalConfirm) modalConfirm.addEventListener("click", function () {
+        if (pendingForm) pendingForm.submit();
+        closeModal();
+    });
+
+    if (modal) modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal && modal.classList.contains("active")) closeModal();
+    });
+})();
+</script>
+{% endblock %}

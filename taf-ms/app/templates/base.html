@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TAF Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2360a5fa'/%3E%3Cstop offset='100%25' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='18' cy='18' r='18' fill='url(%23g)'/%3E%3Ctext x='18' y='24' font-family='system-ui,sans-serif' font-size='18' font-weight='600' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E">
+    <script defer src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --surface-muted: #f3f4f6;
+            --primary: #2563eb;
+            --border: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --danger: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: #ffffff;
+            color: var(--text-main);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            border-right: 1px solid #e5e7eb;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #60a5fa, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #374151;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.15s ease, color 0.15s ease, transform 0.08s ease;
+        }
+
+        .nav-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-link:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+            transform: translateX(2px);
+        }
+
+        .nav-link.active {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            font-size: 11px;
+            color: var(--text-muted);
+            opacity: 1;
+        }
+
+        .content {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+            padding: 32px 40px;
+            overflow: auto;
+            background: linear-gradient(180deg, #f9fafb, #eef2ff);
+        }
+
+        .content-inner {
+            max-width: 1040px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: 24px;
+            letter-spacing: -0.03em;
+        }
+
+        .page-subtitle {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 24px 24px 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(148,163,184,0.45);
+        }
+
+        .card--narrow {
+            max-width: 520px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .card-meta {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        select,
+        input[type="datetime-local"],
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            outline: none;
+            background: #f9fafb;
+            transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        #target-url-input {
+            padding: 11px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px rgba(37,99,235,0.25), 0 0 0 6px rgba(37,99,235,0.12);
+            background: #ffffff;
+        }
+
+        .form-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 20px;
+        }
+
+        .form-group {
+            flex: 1 1 180px;
+        }
+
+        .form-footer {
+            margin-top: 16px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .target-mode-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .target-mode-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .target-mode-option input {
+            margin: 0;
+        }
+
+        .target-mode-option svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .schedule-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-main);
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .schedule-toggle input {
+            margin: 0;
+        }
+
+        .schedule-toggle svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .schedule-row {
+            margin-top: 8px;
+        }
+
+        .run-summary {
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .run-summary-title {
+            margin: 0 0 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .run-summary-line {
+            margin: 2px 0;
+        }
+
+        button,
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: background 0.12s ease, transform 0.06s ease;
+            text-decoration: none;
+        }
+
+        button:hover,
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        button:active,
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #e5edff;
+            color: #1d4ed8;
+        }
+
+        .btn-secondary:hover {
+            background: #dbeafe;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--surface);
+            font-size: 14px;
+        }
+
+        thead tr {
+            background: var(--surface-muted);
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        td {
+            vertical-align: middle;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .status-running,
+        .status-finished,
+        .status-failed,
+        .status-scheduled,
+        .status-cancelled {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .status-running {
+            color: #d97706;
+        }
+
+        .status-finished {
+            color: #059669;
+        }
+
+        .status-failed {
+            color: #dc2626;
+        }
+
+        .status-scheduled {
+            color: #2563eb;
+        }
+
+        .status-cancelled {
+            color: #6b7280;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag-muted {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(148,163,184,0.15);
+            font-size: 11px;
+            color: #4b5563;
+        }
+
+        iframe {
+            width: 100%;
+            height: 88vh;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 16px;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                min-height: auto;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 14px 18px;
+            }
+
+            .nav-links {
+                flex-direction: row;
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 20px 18px 24px;
+            }
+
+            .content-inner {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">T</div>
+            <div class="brand-text">
+                <div class="brand-title">TAF</div>
+                <div class="brand-subtitle">Test Automation</div>
+            </div>
+        </div>
+        <nav class="nav-links">
+            <a href="/" class="nav-link"><span data-lucide="home"></span><span>Dashboard</span></a>
+            <a href="/runs" class="nav-link"><span data-lucide="history"></span><span>Test runs</span></a>
+            <a href="/stats" class="nav-link"><span data-lucide="pie-chart"></span><span>Analytics</span></a>
+        </nav>
+        <div class="sidebar-footer">
+            Fast feedback on your critical paths.
+        </div>
+    </aside>
+
+    <main class="content">
+        <div class="content-inner">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+            window.lucide.createIcons();
+        }
+    });
+</script>
+</body>
+</html>

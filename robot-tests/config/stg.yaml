@@ -1,0 +1,4 @@
+base_url: https://httpbin.org
+timeout: 10
+env_name: stg
+
